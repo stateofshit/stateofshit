@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard Guide — StateOfShit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { color-scheme: light dark }
+    body { margin: 0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif }
+    header { position: sticky; top: 0; backdrop-filter: blur(6px); background: color-mix(in oklab, Canvas, transparent 20%); border-bottom: 1px solid #0001 }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 1rem }
+    h1 { margin: .6rem 0 0.2rem; font-size: 1.6rem }
+    h2 { margin: 1.2rem 0 0.4rem; font-size: 1.2rem }
+    h3 { margin: .8rem 0 0.3rem; font-size: 1.05rem }
+    .muted { color: #6b7280 }
+    .card { border: 1px solid #0002; border-radius: 10px; padding: 1rem; background: color-mix(in oklab, Canvas, CanvasText 3%); margin: .8rem 0 }
+    code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace }
+    pre { padding: .7rem 1rem; border-radius: 8px; overflow: auto; background: color-mix(in oklab, CanvasText, Canvas 94%) }
+    a { color: inherit }
+    a.button { display:inline-block; padding:.5rem .8rem; border-radius:8px; border:1px solid #0002; text-decoration:none; color:inherit; background: color-mix(in oklab, Canvas, CanvasText 3%) }
+    a.button:hover { background: color-mix(in oklab, Canvas, CanvasText 6%) }
+    ul { margin:.4rem 0 .8rem 1.2rem }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <div style="display:flex;align-items:center;gap:.8rem">
+        <div class="brand"><strong>StateOfShit — REST</strong></div>
+        <span style="flex:1"></span>
+        <a class="button" href="/">Dashboard</a>
+        <a class="button" href="/config.html">Config</a>
+        <a class="button" href="/files.html">Files</a>
+        <a class="button" href="/cheatsheet.html">Cheat Docs</a>
+        <a class="button" href="/api/openapi.json" target="_blank">Docs</a>
+        <a class="button" href="/GPT_API.md" target="_blank">GPT Guide</a>
+        <a class="button" href="https://stateofshit.live" target="_blank">Status (live)</a>
+      </div>
+    </div>
+  </header>
+  <main class="wrap">
+    <h1>Dashboard Guide</h1>
+    <p class="muted">Overview of pages and key actions across the .rest dashboard.</p>
+
+    <section class="card">
+      <h2>Home (Dashboard)</h2>
+      <ul>
+        <li>Signed URL: mint time-limited links for files under /public-live or /public-space.</li>
+        <li>Cheat Sheet: quick curl commands with a Hosted/Local base toggle, per-command inputs, copy buttons, and links to docs.</li>
+        <li>Service cards: health/version shortcuts.</li>
+        <li>Docs shortcuts: OpenAPI JSON, GPT Guide, Cheat Sheet Docs, and this guide.</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>Config</h2>
+      <ul>
+        <li>Request builder: method, URL, headers, JSON body; send and view formatted response.</li>
+        <li>Presets: save/load named requests to /srv/box/private/presets.json.</li>
+        <li>Use cases: test endpoints, keep handy admin actions (e.g., publish, tail audit).</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>Files</h2>
+      <ul>
+        <li>Explorer: breadcrumbs, Root/Up, sortable columns (Name/Size/Modified/Type), ".." parent.</li>
+        <li>Actions: New Folder, Rename, Delete, Upload (picker and drag-and-drop).</li>
+        <li>Edit: inline textarea for small text files with Save.</li>
+        <li>Tags: chips for add/remove via /api/fs/tags.</li>
+        <li>Publish: copy files/folders to .live/.space for public site access at /files/…</li>
+        <li>Audit: live tail of recent actions.</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>Cheat Sheet Docs</h2>
+      <p>Detailed “what/why” and basic/advanced examples for every common command.</p>
+      <ul>
+        <li>Filesystem: list, read/write, upload, publish, signed URLs, download.</li>
+        <li>Records: create/get/tag, filter by tags.</li>
+        <li>Admin: audit tail, presets save.</li>
+      </ul>
+      <a class="button" href="/cheatsheet.html">Open Cheat Sheet Docs</a>
+    </section>
+
+    <section class="card">
+      <h2>Auth & Safety</h2>
+      <ul>
+        <li>Hosted base: HTTPS + Nginx Basic Auth protects the dashboard and API.</li>
+        <li>Local base: no Basic Auth (maintenance only on the server).</li>
+        <li>Signed URLs: only for public roots, short TTL recommended.</li>
+        <li>Mutations: read before write; verify state after changes.</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>Tips</h2>
+      <ul>
+        <li>Prefer /staging for uploads; publish to live/space when ready.</li>
+        <li>Use presets to keep repetitive tasks one click away.</li>
+        <li>Use the Cheat Sheet with per-command inputs to avoid syntax mistakes.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

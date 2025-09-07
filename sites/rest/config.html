@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Config — StateOfShit</title>
+  <style>
+    :root { color-scheme: light dark }
+    * { box-sizing: border-box }
+    body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif }
+    header { position: sticky; top: 0; backdrop-filter: blur(6px); background: color-mix(in oklab, Canvas, transparent 20%); border-bottom: 1px solid #0001 }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 1rem }
+    .grid { display: grid; grid-template-columns: 300px 1fr; gap: 1rem }
+    textarea, input, select { width: 100%; padding: .5rem; border: 1px solid #0003; background: color-mix(in oklab, Canvas, CanvasText 3%); border-radius: 8px; color: inherit }
+    label { display: block; margin-top: .5rem; font-weight: 600 }
+    .row { display: flex; gap: .5rem; align-items: center }
+    button { padding: .5rem .8rem; border: 1px solid #0002; border-radius: 8px; background: color-mix(in oklab, Canvas, CanvasText 3%); color: inherit; cursor: pointer }
+    button:hover { background: color-mix(in oklab, Canvas, CanvasText 6%) }
+    .muted { color: #6b7280 }
+    pre { background: color-mix(in oklab, CanvasText, Canvas 94%); padding: .7rem 1rem; border-radius: 8px; overflow: auto }
+    .list { border: 1px solid #0002; border-radius: 8px; padding: .5rem; max-height: 70vh; overflow: auto }
+    .item { padding: .4rem .5rem; border-radius: 6px; cursor: pointer }
+    .item:hover { background: color-mix(in oklab, Canvas, CanvasText 6%) }
+    .active { outline: 2px solid #22c55e55 }
+      a.button { display:inline-block; padding:.5rem .8rem; border-radius:8px; border:1px solid #0002; text-decoration:none; color:inherit; background: color-mix(in oklab, Canvas, CanvasText 3%) }
+    a.button:hover { background: color-mix(in oklab, Canvas, CanvasText 6%) }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <div style="display:flex;align-items:center;gap:.8rem">
+        <div class="brand"><strong>StateOfShit — REST</strong></div>
+        <span style="flex:1"></span>
+        <a class="button" href="/">Dashboard</a>
+        <a class="button" href="/config.html">Config</a>
+        <a class="button" href="/files.html">Files</a>
+        <a class="button" href="/cheatsheet.html" target="_blank">Cheat Docs</a>
+        <a class="button" href="/api/openapi.json" target="_blank">Docs</a>
+        <a class="button" href="/GPT_API.md" target="_blank">GPT Guide</a>
+        <a class="button" href="https://stateofshit.live" target="_blank">Status (live)</a>
+              <a class="button" href="/dashboard.html">Guide</a>
+      </div>
+    </div>
+  </header>
+  <main class="wrap grid">
+    <aside>
+      <div style="display:flex;gap:.5rem;align-items:center">
+        <button id="new">New</button>
+        <button id="save">Save</button>
+        <button id="delete">Delete</button>
+      </div>
+      <div class="list" id="list"></div>
+    </aside>
+    <section>
+      <div class="row">
+        <label style="flex:1">Name <input id="name" placeholder="My request"></label>
+        <label style="max-width:180px">Method
+          <select id="method">
+            <option>GET</option><option>POST</option><option>PUT</option><option>PATCH</option><option>DELETE</option>
+          </select>
+        </label>
+      </div>
+      <label>Endpoint <input id="url" placeholder="/api/fs/list?path=/"></label>
+      <label>Headers (JSON) <textarea id="headers" rows="4" placeholder='{"Content-Type":"application/json"}'></textarea></label>
+      <label>Body (JSON) <textarea id="body" rows="8" placeholder='{"path":"/staging"}'></textarea></label>
+      <div class="row" style="margin-top:.5rem">
+        <button id="send">Send</button>
+        <span class="muted" id="status"></span>
+      </div>
+      <h3>Response</h3>
+      <pre id="out">—</pre>
+    </section>
+  </main>
+  <script>
+    const listEl = document.getElementById('list');
+    const state = { items: [], idx: -1 };
+    const els = id => document.getElementById(id);
+    async function loadPresets(){
+      const r = await fetch('/api/presets');
+      const j = await r.json().catch(()=>({items:[]}));
+      state.items = j.items||[]; state.idx = -1; renderList();
+    }
+    async function savePresets(){
+      await fetch('/api/presets',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({items:state.items})});
+    }
+    function renderList(){
+      listEl.innerHTML = '';
+      state.items.forEach((it,i)=>{
+        const d = document.createElement('div'); d.className='item'+(i===state.idx?' active':'');
+        d.textContent = it.name || it.url; d.onclick=()=>{state.idx=i; fill(it); renderList();}; listEl.appendChild(d);
+      });
+    }
+    function current(){
+      return { name: els('name').value.trim(), method: els('method').value, url: els('url').value.trim(), headers: parseJSON(els('headers').value)||{}, body: parseJSON(els('body').value)||null };
+    }
+    function fill(it){
+      els('name').value = it.name||''; els('method').value = it.method||'GET'; els('url').value = it.url||'';
+      els('headers').value = JSON.stringify(it.headers||{}, null, 2);
+      els('body').value = it.body?JSON.stringify(it.body,null,2):'';
+    }
+    function parseJSON(s){ try{ return s?JSON.parse(s):null }catch{ return null } }
+    els('new').onclick=()=>{ state.idx=-1; fill({}); };
+    els('save').onclick=async()=>{
+      const it=current(); if(!it.url){alert('URL required'); return}
+      if(state.idx<0){ state.items.unshift(it); state.idx=0 } else { state.items[state.idx]=it }
+      await savePresets(); renderList();
+    };
+    els('delete').onclick=async()=>{ if(state.idx<0) return; state.items.splice(state.idx,1); state.idx=-1; await savePresets(); renderList(); fill({}); };
+    els('send').onclick=async()=>{
+      const it=current(); const t0=performance.now(); els('status').textContent='…';
+      try{
+        const r = await fetch(it.url, { method: it.method, headers: it.headers, body: ['GET','HEAD'].includes(it.method)?undefined: (it.headers&&/json/i.test(it.headers['Content-Type']||''))?JSON.stringify(it.body):it.body });
+        const ct = r.headers.get('content-type')||''; let body;
+        body = /json/i.test(ct) ? await r.json().catch(()=>r.text()) : await r.text();
+        els('out').textContent = typeof body==='string' ? body : JSON.stringify(body, null, 2);
+        els('status').textContent = r.status+ ' ' + r.statusText + ` · ${Math.round(performance.now()-t0)} ms`;
+      }catch(e){ els('status').textContent='Error'; els('out').textContent=String(e) }
+    };
+    loadPresets();
+  </script>
+</body>
+</html>

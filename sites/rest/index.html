@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>StateOfShit — API Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { color-scheme: light dark; }
+    * { box-sizing: border-box }
+    body { margin: 0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+    header { position: sticky; top: 0; backdrop-filter: blur(6px); background: color-mix(in oklab, Canvas, transparent 20%); border-bottom: 1px solid #0001; }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 1rem; }
+    .brand { font-weight: 700; letter-spacing: 0.3px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; margin: 1rem 0 2rem; }
+    .card { border: 1px solid #0002; border-radius: 10px; padding: 1rem; background: color-mix(in oklab, Canvas, CanvasText 3%); }
+    h1 { margin: 1rem 0 0.5rem; font-size: 1.6rem; }
+    h2 { margin: 0.6rem 0; font-size: 1.1rem; }
+    code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    pre { padding: .7rem 1rem; border-radius: 8px; overflow: auto; background: color-mix(in oklab, CanvasText, Canvas 94%); }
+    .muted { color: #6b7280; }
+    a.button { display: inline-block; padding: .5rem .8rem; border-radius: 8px; border: 1px solid #0002; text-decoration: none; color: inherit; background: color-mix(in oklab, Canvas, CanvasText 3%); }
+    a.button:hover { background: color-mix(in oklab, Canvas, CanvasText 6%); }
+    .ok { color: #22c55e; font-weight: 700; }
+  </style>
+  <link rel="stylesheet" href="/signed.css">
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <div style="display:flex;align-items:center;gap:.8rem">
+        <div class="brand">StateOfShit — REST</div>
+        <span class="muted" id="meta"></span>
+        <span style="flex:1"></span>
+        <a class="button" href="/">Dashboard</a>
+        <a class="button" href="/config.html">Config</a>
+        <a class="button" href="/files.html">Files</a>
+        <a class="button" href="/cheatsheet.html" target="_blank">Cheat Docs</a>
+        <a class="button" href="/api/openapi.json" target="_blank">Docs</a>
+        <a class="button" href="/GPT_API.md" target="_blank">GPT Guide</a>
+        <a class="button" href="https://stateofshit.live" target="_blank">Status (live)</a>
+              <a class="button" href="/dashboard.html">Guide</a>
+      </div>
+    </div>
+  </header>
+  <main class="wrap">
+    <section class="card" id="signed-url">
+      <h2>Signed URL</h2>
+      <div class="controls">
+        <label>Path <input id="su-path" type="text" placeholder="/staging/file.bin" style="min-width:320px"></label>
+        <label>TTL (s) <input id="su-ttl" type="number" value="300" min="30" step="30" style="width:110px"></label>
+        <button id="su-gen">Generate</button>
+        <button id="su-copy" disabled>Copy</button>
+      </div>
+      <div id="su-out" class="muted" style="margin-top:.6rem"></div>
+    </section>
+  </main>
+  <main class="wrap">
+    <section class="card" id="cheats">
+      <div style="display:flex;align-items:center;gap:.6rem">
+        <h2 style="margin:0;">Cheat Sheet</h2>
+        <span style="flex:1"></span>
+        <label>Base
+          <select id="cs-base">
+            <option value="hosted">Hosted</option>
+            <option value="local">Local</option>
+          </select>
+          <button id="cs-expand" type="button" title="Expand/Collapse details">Expand All</button>
+        </label>
+        <a href="/api/openapi.json" target="_blank" title="OpenAPI">?</a>
+        <a href="/GPT_API.md" target="_blank" title="GPT Guide">?</a>
+      </div>
+      <div class="muted" style="margin:.4rem 0">Mutating requests change server state — read first, then write.</div>
+
+      <div style="display:grid; gap:1rem; grid-template-columns: repeat(auto-fit, minmax(280px,1fr));">
+        <div>
+          <h3 style="margin:.4rem 0">Files</h3>
+          <label>Path <input id="cs-path" value="/staging/file.txt" style="width:100%"></label>
+          <div class="row" style="display:flex;gap:.5rem;align-items:center;margin-top:.3rem">
+            <button id="cs-check" type="button" title="Check path existence">Check</button>
+            <span id="cs-dot" title="unknown" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#9aa1a8"></span>
+            <label>Target
+              <select id="cs-target">
+            <div style="display:flex;align-items:center;gap:.4rem"><button data-copy="cs-publish">Copy</button><span id="cs-publish-label" class="muted">Publish→live</span><input class="cs-in" id="cs-publish-in" placeholder="/staging/file.txt (src path)" style="width:100%">Copy</button><span id="cs-publish-label" class="muted">Publish→live</span></div>
+                <option value="space">space</option>
+              </select>
+            </label>
+            <label>Public
+              <select id="cs-public">
+                <option value="public-live" selected>public-live</option>
+                <option value="public-space">public-space</option>
+              </select>
+            </label>
+          </div>
+          <label style="margin-top:.3rem">Public file name <input id="cs-fname" value="file.txt" style="width:100%"></label>
+          <div style="margin-top:.4rem">
+            <div style="display:flex;align-items:center;gap:.4rem"><button data-copy="cs-list">Copy</button><span class="muted">List</span><input class="cs-in" id="cs-list-in" placeholder="/ (path)" style="width:100%">Copy</button><span class="muted">List</span></div>
+            <pre id="cs-list"></pre> <a href="/cheatsheet.html#fs-list" target="_blank" title="Docs">?/<a></pre>
+            <div style="display:flex;align-items:center;gap:.4rem"><button data-copy="cs-upload">Copy</button><span class="muted">Upload</span><input class="cs-in" id="cs-upload-in" placeholder="local.bin (local file)" style="width:100%">Copy</button><span class="muted">Upload</span></div>
+            <pre id="cs-upload"></pre> <a href="/cheatsheet.html#fs-upload" target="_blank" title="Docs">?/<a></pre>
+            <div style="display:flex;align-items:center;gap:.4rem"><button data-copy="cs-publish">Copy</button><span id="cs-publish-label" class="muted">Publish→live</span><input class="cs-in" id="cs-publish-in" placeholder="/staging/file.txt (src path)" style="width:100%">Copy</button><span class="muted">Publish→live</span></div>
+            <pre id="cs-publish"></pre> <a href="/cheatsheet.html#fs-publish" target="_blank" title="Docs">?/<a></pre>
+            <div style="display:flex;align-items:center;gap:.4rem"><button data-copy="cs-signed">Copy</button><span class="muted">Signed URL</span><input class="cs-in" id="cs-signed-in" placeholder="file.txt (public file name)" style="width:100%">Copy</button><span class="muted">Signed URL</span></div>
+            <pre id="cs-signed"></pre> <a href="/cheatsheet.html#fs-signed" target="_blank" title="Docs">?/<a></pre>
+            <details>
+              <summary>More</summary>
+              <div style="display:flex;align-items:center;gap:.4rem"><button data-copy="cs-write">Copy</button><span class="muted">Edit text</span><input class="cs-in" id="cs-write-in" placeholder="content" style="width:100%">Copy</button><span class="muted">Edit text</span></div>
+              <pre id="cs-write"></pre> <a href="/cheatsheet.html#fs-write" target="_blank" title="Docs">?/<a></pre>
+              <div style="display:flex;align-items:center;gap:.4rem"><button data-copy="cs-download">Copy</button><span class="muted">Download (auth)</span><input class="cs-in" id="cs-download-in" placeholder="/staging/file.txt (path)" style="width:100%">Copy</button><span class="muted">Download (auth)</span></div>
+              <pre id="cs-download"></pre> <a href="/cheatsheet.html#fs-download" target="_blank" title="Docs">?/<a></pre>
+            </details>
+          </div>
+        </div>
+
+        <div>
+          <h3 style="margin:.4rem 0">Records</h3>
+          <label>Key <input id="cs-rkey" value="post:123" style="width:100%"></label>
+          <div style="margin-top:.4rem">
+            <div style="display:flex;align-items:center;gap:.4rem"><button data-copy="cs-rcreate">Copy</button><span class="muted">Create</span><input class="cs-in" id="cs-rcreate-in" placeholder="post:123 (key)" style="width:100%">Copy</button><span class="muted">Create</span></div>
+            <pre id="cs-rcreate"></pre> <a href="/cheatsheet.html#rec-create" target="_blank" title="Docs">?/<a></pre>
+            <div style="display:flex;align-items:center;gap:.4rem"><button data-copy="cs-rget">Copy</button><span class="muted">Get</span><input class="cs-in" id="cs-rget-in" placeholder="post:123 (key)" style="width:100%">Copy</button><span class="muted">Get</span></div>
+            <pre id="cs-rget"></pre> <a href="/cheatsheet.html#rec-get" target="_blank" title="Docs">?/<a></pre>
+            <div style="display:flex;align-items:center;gap:.4rem"><button data-copy="cs-rtags">Copy</button><span class="muted">Tags</span><input class="cs-in" id="cs-rtags-in" placeholder="post:123 (key)" style="width:100%">Copy</button><span class="muted">Tags</span></div>
+            <pre id="cs-rtags"></pre> <a href="/cheatsheet.html#rec-tags" target="_blank" title="Docs">?/<a></pre>
+          </div>
+        </div>
+
+        <div>
+          <h3 style="margin:.4rem 0">Admin</h3>
+          <div style="margin-top:.4rem">
+            <div style="display:flex;align-items:center;gap:.4rem"><button data-copy="cs-audit">Copy</button><span class="muted">Audit tail</span><input class="cs-in" id="cs-audit-in" placeholder="50 (limit)" style="width:100%">Copy</button><span class="muted">Audit tail</span></div>
+            <pre id="cs-audit"></pre> <a href="/cheatsheet.html#audit-tail" target="_blank" title="Docs">?/<a></pre>
+            <div style="display:flex;align-items:center;gap:.4rem"><button data-copy="cs-presets">Copy</button><span class="muted">Save presets</span></div>
+            <pre id="cs-presets"></pre> <a href="/cheatsheet.html#presets-save" target="_blank" title="Docs">?/<a></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <main class="wrap">
+    <div class="grid">
+      <section class="card">
+        <h2>Service</h2>
+        <div>Dashboard <span class="ok">ONLINE</span></div>
+        <div class="muted">Served by Nginx on HTTPS</div>
+        <div style="margin-top:.6rem">
+          <a class="button" href="/api/health" target="_blank">/api/health</a>
+          <a class="button" href="/api/version" target="_blank">/api/version</a>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Next Steps</h2>
+        <ul>
+          <li>Decide API stack (FastAPI / Express)</li>
+          <li>Auth scheme (JWT, Basic for admin)</li>
+          <li>Metrics + logs (access/error)</li>
+          <li>Backups + deploy workflow</li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <h2>Endpoints (stub)</h2>
+        <pre>GET /api/health   → 200 {"status":"ok"}
+GET /api/version  → 200 {name, version}</pre>
+        <div class="muted">Backed by Nginx for now</div>
+      </section>
+    </div>
+  </main>
+  <script>
+    const d = new Date();
+    document.getElementById('meta').textContent = '· ' + d.toLocaleString();
+
+    // Cheat sheet logic
+    const qs = id => document.getElementById(id);
+    const baseSel = document.getElementById('cs-base');
+    function state() {
+      const mode = (baseSel?.value) || 'hosted';
+      const BASE = mode === 'hosted' ? 'https://stateofshit.rest/api' : 'http://127.0.0.1:8001/api';
+      const AUTH = mode === 'hosted' ? '-u admin:*** ' : '';
+      return { BASE, AUTH, mode };
+    }
+    function buildCmd(id){
+      const { BASE, AUTH } = state();
+      const gPath = (qs('cs-path')?.value || '/staging/file.txt');
+      const gFname = (qs('cs-fname')?.value || 'file.txt');
+      const gKey = (qs('cs-rkey')?.value || 'post:123');
+      const target = (qs('cs-target')?.value || 'live');
+      const pub = (qs('cs-public')?.value || 'public-live');
+      const o = {
+        list: (qs('cs-list-in')?.value || '/'),
+        uploadFile: (qs('cs-upload-in')?.value || 'local.bin'),
+        publishSrc: (qs('cs-publish-in')?.value || gPath),
+        signedName: (qs('cs-signed-in')?.value || gFname),
+        writeContent: (qs('cs-write-in')?.value || 'hello'),
+        downloadPath: (qs('cs-download-in')?.value || gPath),
+        rKeyCreate: (qs('cs-rcreate-in')?.value || gKey),
+        rKeyGet: (qs('cs-rget-in')?.value || gKey),
+        rKeyTags: (qs('cs-rtags-in')?.value || gKey),
+        auditLimit: (qs('cs-audit-in')?.value || '50'),
+      };
+      switch(id){
+        case 'cs-list': return `${AUTH}curl "${BASE}/fs/list?path=${encodeURIComponent(o.list)}"`;
+        case 'cs-upload': return `${AUTH}curl -X POST -F path=/staging -F file=@./${o.uploadFile} "${BASE}/fs/upload"`;
+        case 'cs-publish': return `${AUTH}curl -X POST -H "Content-Type: application/json" -d '{"src":"${o.publishSrc}","target":"${target}"}' "${BASE}/fs/publish"`;
+        case 'cs-signed': return `${AUTH}curl -X POST -H "Content-Type: application/json" -d '{"path":"/${pub}/${o.signedName}","ttl_seconds":300}' "${BASE}/fs/signed-url"`;
+        case 'cs-write': return `${AUTH}curl -X PATCH -H "Content-Type: application/x-www-form-urlencoded" --data-urlencode 'content=${o.writeContent}' "${BASE}/fs/write?path=${encodeURIComponent(gPath)}"`;
+        case 'cs-download': return `${AUTH}curl -OJL "${BASE}/fs/download?path=${encodeURIComponent(o.downloadPath)}"`;
+        case 'cs-rcreate': return `${AUTH}curl -X POST -H 'Content-Type: application/json' -d '{"key":"${o.rKeyCreate}","value":{"title":"Hello"},"tags":["news"]}' "${BASE}/records"`;
+        case 'cs-rget': return `${AUTH}curl "${BASE}/records/${o.rKeyGet}"`;
+        case 'cs-rtags': return `${AUTH}curl -X PATCH -H 'Content-Type: application/json' -d '{"add":["featured"],"remove":["news"]}' "${BASE}/records/${o.rKeyTags}/tags"`;
+        case 'cs-audit': return `${AUTH}curl "${BASE}/audit/tail?limit=${encodeURIComponent(o.auditLimit)}"`;
+        case 'cs-presets': return `${AUTH}curl -X PUT -H 'Content-Type: application/json' -d '{"items":[{"name":"List Root","method":"GET","url":"/api/fs/list?path=/","headers":{},"body":null}]}' "${BASE}/presets"`;
+      }
+      return '';
+    }
+    function renderCheats() {
+      if (!baseSel) return;
+      const ids = ['cs-list','cs-upload','cs-publish','cs-signed','cs-write','cs-download','cs-rcreate','cs-rget','cs-rtags','cs-audit','cs-presets'];
+      ids.forEach(id => { const el = qs(id); if (el) el.textContent = buildCmd(id); });
+      localStorage.setItem('cheatBase', state().mode);
+    }
+    document.querySelectorAll('[data-copy]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-copy');
+        const cmd = buildCmd(id);
+        navigator.clipboard.writeText(cmd).then(() => { btn.textContent = 'Copied'; setTimeout(()=>btn.textContent='Copy', 1000); });
+      });
+    });
+    if (baseSel) {
+      baseSel.value = localStorage.getItem('cheatBase') || 'hosted';
+      baseSel.addEventListener('change', renderCheats);
+      ['cs-path','cs-fname','cs-rkey','cs-target','cs-public'].forEach(id => qs(id)?.addEventListener('input', renderCheats));
+      document.querySelectorAll('.cs-in').forEach(inp => inp.addEventListener('input', renderCheats));
+      renderCheats();
+      const pubLabel = qs('cs-publish-label');
+      function updateLabels(){ if(pubLabel){ const t=(qs('cs-target')?.value)||'live'; pubLabel.textContent = 'Publish→'+t; } }
+      qs('cs-target')?.addEventListener('change', updateLabels);
+      updateLabels();
+      // Check path existence
+      const checkBtn = qs('cs-check'); const dot = qs('cs-dot');
+      async function checkPath(){ if(!checkBtn||!dot) return; const { BASE }=state(); const path=(qs('cs-path')?.value||'/'); dot.style.background='#9aa1a8'; dot.title='checking'; try{ const isDir=path.endsWith('/'); const u = isDir? `${BASE}/fs/list?path=${encodeURIComponent(path)}` : `${BASE}/fs/read?path=${encodeURIComponent(path)}`; const r=await fetch(u,{cache:'no-store'}); if(r.ok){ dot.style.background='#22c55e'; dot.title='exists'; } else if(r.status===404){ dot.style.background='#ef4444'; dot.title='not found'; } else { dot.style.background='#f59e0b'; dot.title='status '+r.status; } } catch(e){ dot.style.background='#f59e0b'; dot.title='error'; } }
+      checkBtn?.addEventListener('click', checkPath);
+      qs('cs-path')?.addEventListener('change', ()=>{ if(dot){ dot.style.background='#9aa1a8'; dot.title='unknown'; }});
+      // Expand/Collapse details
+      const exp = qs('cs-expand');
+      function toggleDetails(){ const open = !(localStorage.getItem('cheatExpand')==='1'); document.querySelectorAll('#cheats details').forEach(d=> d.open=open); localStorage.setItem('cheatExpand', open? '1':'0'); if(exp) exp.textContent = open? 'Collapse All':'Expand All'; }
+      if(exp){ exp.addEventListener('click', toggleDetails); const cur = localStorage.getItem('cheatExpand')==='1'; document.querySelectorAll('#cheats details').forEach(d=> d.open=cur); exp.textContent = cur? 'Collapse All':'Expand All'; }
+    }
+  </script>
+</body>
+</html>

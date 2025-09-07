@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Files — StateOfShit</title>
+  <style>
+    :root { color-scheme: light dark }
+    * { box-sizing: border-box }
+    body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif }
+    header { position: sticky; top: 0; backdrop-filter: blur(6px); background: color-mix(in oklab, Canvas, transparent 20%); border-bottom: 1px solid #0001 }
+    .wrap { max-width: 1200px; margin: 0 auto; padding: 1rem }
+    .grid { display: grid; grid-template-columns: 320px 1fr; gap: 1rem }
+    .pane { border: 1px solid #0002; border-radius: 10px; padding: .7rem; background: color-mix(in oklab, Canvas, CanvasText 3%) }
+    ul { list-style: none; padding: 0; margin: 0 }
+    li { padding: .25rem .4rem; border-radius: 6px; cursor: pointer; display:flex; gap:.4rem; align-items:center }
+    li:hover { background: color-mix(in oklab, Canvas, CanvasText 6%) }
+    .dir { font-weight: 700 }
+    input, textarea { width: 100%; padding: .5rem; border: 1px solid #0003; background: color-mix(in oklab, Canvas, CanvasText 3%); border-radius: 8px; color: inherit }
+    button { padding: .45rem .7rem; border: 1px solid #0002; border-radius: 8px; background: color-mix(in oklab, Canvas, CanvasText 3%); color: inherit; cursor: pointer }
+    button:hover { background: color-mix(in oklab, Canvas, CanvasText 6%) }
+    .row { display:flex; gap:.5rem; align-items:center }
+    .chips { display:flex; gap:.4rem; flex-wrap: wrap }
+    .chip { padding: .15rem .4rem; border: 1px solid #0003; border-radius: 999px; font-size: .85rem }
+    .muted { color: #6b7280 }
+    pre { background: color-mix(in oklab, CanvasText, Canvas 94%); padding: .6rem .8rem; border-radius: 8px; overflow:auto }
+    .drop { border: 2px dashed #8886; border-radius: 10px; padding: 1rem; text-align: center }
+      a.button { display:inline-block; padding:.5rem .8rem; border-radius:8px; border:1px solid #0002; text-decoration:none; color:inherit; background: color-mix(in oklab, Canvas, CanvasText 3%) }
+    a.button:hover { background: color-mix(in oklab, Canvas, CanvasText 6%) }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <div style="display:flex;align-items:center;gap:.8rem">
+        <div class="brand"><strong>StateOfShit — REST</strong></div>
+        <span style="flex:1"></span>
+        <a class="button" href="/">Dashboard</a>
+        <a class="button" href="/config.html">Config</a>
+        <a class="button" href="/files.html">Files</a>
+        <a class="button" href="/cheatsheet.html" target="_blank">Cheat Docs</a>
+        <a class="button" href="/api/openapi.json" target="_blank">Docs</a>
+        <a class="button" href="/GPT_API.md" target="_blank">GPT Guide</a>
+        <a class="button" href="https://stateofshit.live" target="_blank">Status (live)</a>
+              <a class="button" href="/dashboard.html">Guide</a>
+      </div>
+    </div>
+  </header>
+  <main class="wrap grid">
+    <aside class="pane" style="min-height:70vh">
+      <div class="row">
+        <input id="path" value="/" />
+        <button id="go">Go</button>
+      </div>
+      <div class="row" style="margin-top:.4rem; gap:.4rem">
+        <button id="root">Root</button>
+        <button id="up">Up</button>
+        <div id="crumbs" class="muted" style="overflow:auto; white-space:nowrap"></div>
+      </div>
+      <div id="tree" style="margin-top:.5rem"></div>
+      <div class="drop" id="drop">Drop files here to upload to /staging</div>
+    </aside>
+    <section class="pane">
+      <div class="row" style="gap:.4rem; align-items:center">
+        <strong id="sel">—</strong>
+        <span style="flex:1"></span>
+        <button id="mkDir">New Folder</button>
+        <button id="rename">Rename</button>
+        <button id="delete">Delete</button>
+        <label class="button" for="uploader" style="cursor:pointer">Upload</label>
+        <input id="uploader" type="file" multiple style="display:none">
+        <button id="pubLive">Publish to .live</button>
+        <button id="pubSpace">Publish to .space</button>
+      </div>
+      <div class="muted" id="curPath" style="margin:.3rem 0"></div>
+      <div style="overflow:auto">
+        <table id="list" style="width:100%; border-collapse:collapse">
+          <thead><tr>
+            <th data-sort="name" style="text-align:left; cursor:pointer">Name</th>
+            <th data-sort="size" style="text-align:right; width:10ch; cursor:pointer">Size</th>
+            <th data-sort="mtime" style="text-align:left; width:22ch; cursor:pointer">Modified</th>
+            <th style="width:10ch">Type</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div id="viewer" class="muted" style="margin-top:.5rem">Select a file to view</div>
+      <div style="margin-top:1rem">
+        <div class="row"><strong>Tags</strong><span style="flex:1"></span><input id="tagInput" placeholder="add-tag" style="max-width:200px"><button id="addTag">Add</button></div>
+        <div class="chips" id="tags"></div>
+      </div>
+      <h3>Audit Tail</h3>
+      <pre id="audit">—</pre>
+    </section>
+  </main>
+  <script>
+    const el = id => document.getElementById(id);
+    async function list(path){ const r=await fetch('/api/fs/list?'+new URLSearchParams({path})); return r.json(); }
+    async function read(path){ const r=await fetch('/api/fs/read?'+new URLSearchParams({path})); return r.json(); }
+    async function write(path, content){ const r=await fetch('/api/fs/write?'+new URLSearchParams({path}),{method:'PATCH',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({content})}); return r.json(); }
+    async function tags(path){ const r=await fetch('/api/fs/tags?'+new URLSearchParams({path})); return r.json(); }
+    async function patchTags(path, add, remove){ const r=await fetch('/api/fs/tags',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({path,add,remove})}); return r.json(); }
+    async function publish(src,target){ const r=await fetch('/api/fs/publish',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({src,target})}); return r.json(); }
+    async function tail(){ const r=await fetch('/api/audit/tail?limit=50'); return r.json(); }
+
+    function normPath(p){
+      if(!p) return '/';
+      p = (''+p).trim();
+      if(!p.startsWith('/')) p = '/'+p;
+      p = p.replace(/\+/g,'/');
+      if(p.length>1 && p.endsWith('/')) p = p.slice(0,-1);
+      return p || '/';
+    }
+    function parentPath(p){
+      p = normPath(p);
+      if(p === '/' ) return '/';
+      const parts = p.split('/').filter(Boolean);
+      parts.pop();
+      return parts.length ? '/'+parts.join('/') : '/';
+    }
+    function renderCrumbs(cur){
+      const c = el('crumbs'); if(!c) return;
+      const p = normPath(cur);
+      const parts = p === '/' ? [] : p.split('/').filter(Boolean);
+      let acc = '';
+      c.innerHTML='';
+      const mk = (label, path) => {
+        const a = document.createElement('a'); a.href = '#'; a.textContent = label; a.style.textDecoration='none'; a.onclick=(e)=>{ e.preventDefault(); renderTree(path); };
+        return a;
+      };
+      c.appendChild(mk('/', '/'));
+      parts.forEach((seg,i)=>{
+        c.appendChild(document.createTextNode(' / '));
+        acc = acc + '/' + seg;
+        c.appendChild(mk(seg, acc));
+      });
+    }
+    
+    let sortKey = 'name'; let sortDir = 'asc'; let currentPath = '/';
+    function fmtSize(n){ if(n==null) return ''; const units=['B','KB','MB','GB']; let i=0, x=n; while(x>=1024 && i<units.length-1){ x/=1024; i++; } return (i?x.toFixed(1):x)+ ' '+units[i]; }
+    function renderList(data){
+      currentPath = data.path || '/';
+      const tb = el('list').querySelector('tbody'); tb.innerHTML='';
+      el('curPath').textContent = 'Path: ' + (currentPath||'/');
+      const rows = data.entries.slice();
+      rows.sort((a,b)=>{
+        if(sortKey==='name'){ const an=(a.is_dir?'0':'1')+a.name.toLowerCase(); const bn=(b.is_dir?'0':'1')+b.name.toLowerCase(); return sortDir==='asc'? an.localeCompare(bn) : bn.localeCompare(an);
+        } else if(sortKey==='size'){ return sortDir==='asc'? (a.size-b.size) : (b.size-a.size) }
+        else if(sortKey==='mtime'){ return sortDir==='asc'? (a.mtime.localeCompare(b.mtime)) : (b.mtime.localeCompare(a.mtime)) }
+        return 0;
+      });
+      if(currentPath !== '/'){
+        const tr = document.createElement('tr'); tr.innerHTML = `<td colspan="4">..</td>`; tr.style.cursor='pointer'; tr.onclick=()=>renderTree(parentPath(currentPath)); tb.appendChild(tr);
+      }
+      rows.forEach(e=>{
+        const tr = document.createElement('tr'); tr.style.cursor='pointer';
+        tr.innerHTML = `<td>${e.is_dir?'📁 ':'📄 '}${e.name}</td><td style="text-align:right">${e.is_dir?'':fmtSize(e.size)}</td><td>${new Date(e.mtime).toLocaleString()}</td><td>${e.is_dir?'dir':'file'}</td>`;
+        tr.onclick=()=>{
+          const p = (data.path==='/'?'':('/'+data.path)) + '/' + e.name;
+          if(e.is_dir) renderTree(p); else select(p);
+        };
+        tb.appendChild(tr);
+      });
+    }
+    window.addEventListener('hashchange', ()=>{
+      const h = decodeURIComponent(location.hash.slice(1)||'/');
+      if(h && h!==currentPath) renderTree(h);
+    });
+async function renderTree(path){
+      path = normPath(path);
+      const data = await list(path);
+      el('path').value = data.path;
+      renderCrumbs(data.path);
+      if(location.hash !== '#' + encodeURIComponent(data.path)){ location.hash = encodeURIComponent(data.path); }
+      // render table list
+      renderList(data);
+    }
+    async function select(path){
+      selected = path; el('sel').textContent = path;
+      try{
+        const j = await read(path);
+        const txt = j.content;
+        const ta = document.createElement('textarea'); ta.rows=16; ta.value=txt;
+        const save = document.createElement('button'); save.textContent='Save'; save.onclick=async()=>{ await write(path, ta.value); refreshAudit(); };
+        const box = document.createElement('div'); box.append(ta, document.createElement('br'), save);
+        el('viewer').innerHTML=''; el('viewer').appendChild(box);
+      }catch{
+        el('viewer').textContent='Binary or unreadable file';
+      }
+      const tg = await tags(path); renderTags(tg.tags||[]);
+    }
+    function renderTags(arr){
+      const wrap = el('tags'); wrap.innerHTML=''; arr.forEach(t=>{ const d=document.createElement('span'); d.className='chip'; d.textContent=t; d.onclick=async()=>{ await patchTags(selected,[],[t]); const t2 = await tags(selected); renderTags(t2.tags||[]); }; wrap.appendChild(d); });
+    }
+    async function refreshAudit(){ const a = await tail(); el('audit').textContent = a.items.map(x=>JSON.stringify(x)).join('\n'); }
+
+    el('go').onclick=()=>renderTree(el('path').value||'/');
+    el('root').onclick=()=>renderTree('/');
+    el('up').onclick=()=>renderTree(parentPath(el('path').value||'/'));
+    el('addTag').onclick=async()=>{ const t=el('tagInput').value.trim(); if(!t) return; await patchTags(selected, [t], []); el('tagInput').value=''; const t2 = await tags(selected); renderTags(t2.tags||[]); };
+    el('pubLive').onclick=async()=>{ if(!selected) return; await publish(selected,'live'); refreshAudit(); };
+    el('pubSpace').onclick=async()=>{ if(!selected) return; await publish(selected,'space'); refreshAudit(); };
+
+    // Drag & drop upload to /staging
+    const drop = el('drop');
+    drop.ondragover = e=>{ e.preventDefault(); drop.style.borderColor='#22c55e'; };
+    drop.ondragleave = e=>{ drop.style.borderColor=''; };
+    drop.ondrop = async e=>{
+      e.preventDefault(); drop.style.borderColor='';
+      const files = e.dataTransfer.files; for(const f of files){
+        const fd = new FormData(); fd.append('path','/staging'); fd.append('file', f);
+        await fetch('/api/fs/upload', {method:'POST', body:fd}); refreshAudit();
+      }
+      renderTree('/staging');
+    };
+
+    let selected=null; renderTree('/'); refreshAudit();
+    el('list').querySelectorAll('th[data-sort]').forEach(th=> th.addEventListener('click', ()=>{ const k=th.getAttribute('data-sort'); if(sortKey===k){ sortDir = (sortDir==='asc'?'desc':'asc'); } else { sortKey=k; sortDir='asc'; } renderTree(currentPath); }));
+    el('uploader').addEventListener('change', async (ev)=>{ const files = ev.target.files; for(const f of files){ const fd=new FormData(); fd.append('path', currentPath); fd.append('file', f); await fetch('/api/fs/upload',{method:'POST', body:fd}); } refreshAudit(); renderTree(currentPath); ev.target.value=''; });
+    el('mkDir').onclick=async()=>{ const name=prompt('Folder name'); if(!name) return; await fetch('/api/fs/mkdir',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path: (currentPath==='/'?'':currentPath)+'/'+name})}); renderTree(currentPath); };
+    el('rename').onclick=async()=>{ if(!selected){ alert('Select a file first'); return;} const bn=selected.split('/').pop(); const nn=prompt('New name', bn); if(!nn||nn===bn) return; const dst = selected.slice(0, selected.length-bn.length) + nn; await fetch('/api/fs/move',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({src:selected,dst})}); selected = dst; renderTree(currentPath); };
+    el('delete').onclick=async()=>{ if(!selected){ alert('Select a file or folder'); return;} if(!confirm('Delete '+selected+'?')) return; await fetch('/api/fs/delete?'+new URLSearchParams({path:selected}), {method:'DELETE'}); selected=null; el('viewer').textContent=''; renderTree(currentPath); };
+  </script>
+</body>
+</html>

@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>stateofshit.space</title>
+  <style>
+    :root { color-scheme: dark light }
+    html, body { height: 100% }
+    body { margin: 0; display:grid; place-items:center; background: #0b0f12; color: #c8d0d8; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace }
+    .term { width:min(1000px, 92vw); min-height: 60vh; border: 1px solid #1a2631; border-radius: 12px; background: #0f1720; padding: 1rem; box-shadow: 0 10px 30px #0006 }
+    .title { color:#7ee787; font-weight: 800; letter-spacing:.5px; margin-bottom:.5rem }
+    pre { background: #0b1118; border: 1px solid #13202b; padding: .8rem 1rem; border-radius: 8px; overflow:auto; max-height:60vh }
+    a { color:#7dcfff; text-decoration:none }
+    .row { display:flex; gap:.6rem; align-items:center; justify-content:space-between }
+  </style>
+</head>
+<body>
+  <div class="term">
+    <div class="row"><div class="title">stateofshit.space</div><div><a href="https://stateofshit.live">Status</a></div></div>
+    <div id="out">Loading…</div>
+  </div>
+  <script>
+    async function load(){
+      const out = document.getElementById('out');
+      try{
+        const cfg = await fetch('/files/_show.json', {cache:'no-store'});
+        if(!cfg.ok){ out.textContent='No selection yet. Put _show.json in /srv/box/public-space'; return }
+        const j = await cfg.json();
+        let p = (j.path||'').replace(/^\/+/, ''); if(!p){ out.textContent='Set {"path":"..."} in _show.json'; return }
+        const res = await fetch('/files/'+encodeURIComponent(p));
+        if(!res.ok){ out.textContent = 'Selected file not found'; return }
+        const ct = res.headers.get('content-type')||'';
+        if(/image\//i.test(ct)){
+          const img = document.createElement('img'); img.src = '/files/'+encodeURIComponent(p); img.style.maxWidth='100%'; img.style.height='auto'; out.innerHTML=''; out.appendChild(img);
+        } else if(/video\//i.test(ct)){
+          const v = document.createElement('video'); v.controls=true; v.src='/files/'+encodeURIComponent(p); v.style.maxWidth='100%'; out.innerHTML=''; out.appendChild(v);
+        } else if(/audio\//i.test(ct)){
+          const a = document.createElement('audio'); a.controls=true; a.src='/files/'+encodeURIComponent(p); out.innerHTML=''; out.appendChild(a);
+        } else if(/text\//i.test(ct) || /json/i.test(ct)){
+          const txt = await res.text(); const pre=document.createElement('pre'); pre.textContent=txt; out.innerHTML=''; out.appendChild(pre);
+        } else {
+          out.innerHTML = '<a href="'+('/files/'+encodeURIComponent(p))+'">Download '+p+'</a>';
+        }
+      }catch(e){ out.textContent = 'Error loading: '+e }
+    }
+    load();
+  </script>
+</body>
+</html>

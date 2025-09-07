@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cheat Sheet Docs — StateOfShit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { color-scheme: light dark }
+    body { margin: 0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif }
+    header { position: sticky; top: 0; backdrop-filter: blur(6px); background: color-mix(in oklab, Canvas, transparent 20%); border-bottom: 1px solid #0001 }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 1rem }
+    h1 { margin: .6rem 0 0.2rem; font-size: 1.6rem }
+    h2 { margin: 1.2rem 0 0.4rem; font-size: 1.2rem }
+    h3 { margin: .8rem 0 0.3rem; font-size: 1.05rem }
+    .muted { color: #6b7280 }
+    .card { border: 1px solid #0002; border-radius: 10px; padding: 1rem; background: color-mix(in oklab, Canvas, CanvasText 3%); margin: .8rem 0 }
+    code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace }
+    pre { padding: .7rem 1rem; border-radius: 8px; overflow: auto; background: color-mix(in oklab, CanvasText, Canvas 94%) }
+    a { color: inherit }
+    .toc a { text-decoration: none }
+      a.button { display:inline-block; padding:.5rem .8rem; border-radius:8px; border:1px solid #0002; text-decoration:none; color:inherit; background: color-mix(in oklab, Canvas, CanvasText 3%) }
+    a.button:hover { background: color-mix(in oklab, Canvas, CanvasText 6%) }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <div style="display:flex;align-items:center;gap:.8rem">
+        <div class="brand"><strong>StateOfShit — REST</strong></div>
+        <span style="flex:1"></span>
+        <a class="button" href="/">Dashboard</a>
+        <a class="button" href="/config.html">Config</a>
+        <a class="button" href="/files.html">Files</a>
+        <a class="button" href="/cheatsheet.html">Cheat Docs</a>
+        <a class="button" href="/api/openapi.json" target="_blank">Docs</a>
+        <a class="button" href="/GPT_API.md" target="_blank">GPT Guide</a>
+        <a class="button" href="https://stateofshit.live" target="_blank">Status (live)</a>
+              <a class="button" href="/dashboard.html">Guide</a>
+      </div>
+    </div>
+  </header>
+  <main class="wrap">
+    <div class="card toc">
+      <strong>Commands</strong>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.5rem;margin-top:.5rem">
+        <a href="#fs-list">List directory</a>
+        <a href="#fs-upload">Upload file</a>
+        <a href="#fs-publish">Publish to live/space</a>
+        <a href="#fs-signed">Signed URL</a>
+        <a href="#fs-write">Edit text</a>
+        <a href="#fs-download">Download (auth)</a>
+        <a href="#rec-create">Record: create</a>
+        <a href="#rec-get">Record: get</a>
+        <a href="#rec-tags">Record: tags</a>
+        <a href="#audit-tail">Audit tail</a>
+        <a href="#presets-save">Presets: save</a>
+      </div>
+    </div>
+
+    <section id="fs-list" class="card">
+      <h2>List directory</h2>
+      <p class="muted">What: Lists entries (files/folders) in a directory under /srv/box. Use to inspect before acting.</p>
+      <h3>Basic</h3>
+      <pre>curl -u admin:*** "https://stateofshit.rest/api/fs/list?path=/"</pre>
+      <h3>Advanced</h3>
+      <pre># List a subfolder
+curl -u admin:*** "https://stateofshit.rest/api/fs/list?path=/staging/" | jq '.entries[] | {name, size}'</pre>
+    </section>
+
+    <section id="fs-upload" class="card">
+      <h2>Upload file</h2>
+      <p class="muted">What: Uploads a local file into /srv/box. Use /staging as a safe landing zone. Max 1 GB.</p>
+      <h3>Basic</h3>
+      <pre>curl -u admin:*** -X POST -F path=/staging -F file=@./local.bin "https://stateofshit.rest/api/fs/upload"</pre>
+      <h3>Advanced</h3>
+      <pre># Overwrite an existing path
+curl -u admin:*** -X POST -F path=/staging/local.bin -F overwrite=true -F file=@./local.bin \
+  "https://stateofshit.rest/api/fs/upload"</pre>
+    </section>
+
+    <section id="fs-publish" class="card">
+      <h2>Publish to live/space</h2>
+      <p class="muted">What: Copies a file or folder to the public web roots. Access from the site /files/... route.</p>
+      <h3>Basic</h3>
+      <pre>curl -u admin:*** -X POST -H "Content-Type: application/json" \
+  -d '{"src":"/staging/file.txt","target":"live"}' \
+  "https://stateofshit.rest/api/fs/publish"
+# Then: https://stateofshit.live/files/file.txt</pre>
+      <h3>Advanced</h3>
+      <pre># Publish a folder recursively to space
+curl -u admin:*** -X POST -H "Content-Type: application/json" \
+  -d '{"src":"/staging/site","target":"space"}' \
+  "https://stateofshit.rest/api/fs/publish"</pre>
+    </section>
+
+    <section id="fs-signed" class="card">
+      <h2>Signed URL</h2>
+      <p class="muted">What: Creates a temporary, unauthenticated download link for public content. Use for sharing.</p>
+      <h3>Basic</h3>
+      <pre>curl -u admin:*** -X POST -H "Content-Type: application/json" \
+  -d '{"path":"/public-live/file.txt","ttl_seconds":300}' \
+  "https://stateofshit.rest/api/fs/signed-url"</pre>
+      <h3>Advanced</h3>
+      <pre># Longer TTL and space root
+curl -u admin:*** -X POST -H "Content-Type: application/json" \
+  -d '{"path":"/public-space/file.txt","ttl_seconds":1800}' \
+  "https://stateofshit.rest/api/fs/signed-url"</pre>
+    </section>
+
+    <section id="fs-write" class="card">
+      <h2>Edit text</h2>
+      <p class="muted">What: Writes small text files. For larger edits, upload a new file.</p>
+      <h3>Basic</h3>
+      <pre>curl -u admin:*** -X PATCH -H "Content-Type: application/x-www-form-urlencoded" \
+  --data-urlencode 'content=hello' \
+  "https://stateofshit.rest/api/fs/write?path=/staging/note.txt"</pre>
+      <h3>Advanced</h3>
+      <pre># Multiline via here-doc
+curl -u admin:*** -X PATCH -H "Content-Type: application/x-www-form-urlencoded" \
+  --data-urlencode "content=$(cat <<'EOF'
+line 1
+line 2
+EOF
+)" \
+  "https://stateofshit.rest/api/fs/write?path=/staging/notes.txt"</pre>
+    </section>
+
+    <section id="fs-download" class="card">
+      <h2>Download (auth)</h2>
+      <p class="muted">What: Downloads a file behind admin auth. Use signed URLs for public sharing.</p>
+      <h3>Basic</h3>
+      <pre>curl -u admin:*** -OJL "https://stateofshit.rest/api/fs/download?path=/staging/file.txt"</pre>
+      <h3>Advanced</h3>
+      <pre># Resume partial download
+curl -u admin:*** -C - -OJL \
+  "https://stateofshit.rest/api/fs/download?path=/staging/big.bin"</pre>
+    </section>
+
+    <section id="rec-create" class="card">
+      <h2>Record: create</h2>
+      <p class="muted">What: Stores a structured record with tags.</p>
+      <h3>Basic</h3>
+      <pre>curl -u admin:*** -X POST -H 'Content-Type: application/json' \
+  -d '{"key":"post:123","value":{"title":"Hello"},"tags":["news"]}' \
+  "https://stateofshit.rest/api/records"</pre>
+      <h3>Advanced</h3>
+      <pre># Conflict-safe create: check then create
+curl -u admin:*** "https://stateofshit.rest/api/records/post:123" || \
+curl -u admin:*** -X POST -H 'Content-Type: application/json' \
+  -d '{"key":"post:123","value":{"title":"Hello"}}' \
+  "https://stateofshit.rest/api/records"</pre>
+    </section>
+
+    <section id="rec-get" class="card">
+      <h2>Record: get</h2>
+      <p class="muted">What: Fetches one record by key.</p>
+      <h3>Basic</h3>
+      <pre>curl -u admin:*** "https://stateofshit.rest/api/records/post:123"</pre>
+      <h3>Advanced</h3>
+      <pre># Filter by tag when listing
+curl -u admin:*** "https://stateofshit.rest/api/records?tag=news&limit=20"</pre>
+    </section>
+
+    <section id="rec-tags" class="card">
+      <h2>Record: tags</h2>
+      <p class="muted">What: Adds/removes tags from a record.</p>
+      <h3>Basic</h3>
+      <pre>curl -u admin:*** -X PATCH -H 'Content-Type: application/json' \
+  -d '{"add":["featured"],"remove":["news"]}' \
+  "https://stateofshit.rest/api/records/post:123/tags"</pre>
+      <h3>Advanced</h3>
+      <pre># Remove a tag only if present
+curl -u admin:*** "https://stateofshit.rest/api/records/post:123" | jq -e '.tags | index("old")' >/dev/null && \
+curl -u admin:*** -X PATCH -H 'Content-Type: application/json' \
+  -d '{"remove":["old"]}' \
+  "https://stateofshit.rest/api/records/post:123/tags" || echo 'tag not present'</pre>
+    </section>
+
+    <section id="audit-tail" class="card">
+      <h2>Audit tail</h2>
+      <p class="muted">What: Shows recent API actions for visibility and debugging.</p>
+      <h3>Basic</h3>
+      <pre>curl -u admin:*** "https://stateofshit.rest/api/audit/tail?limit=50"</pre>
+      <h3>Advanced</h3>
+      <pre># Pretty print with jq and filter by kind
+curl -u admin:*** "https://stateofshit.rest/api/audit/tail?limit=200" | jq '.items[] | select(.kind=="fs.upload")'</pre>
+    </section>
+
+    <section id="presets-save" class="card">
+      <h2>Presets: save</h2>
+      <p class="muted">What: Saves request presets used by the Config page.</p>
+      <h3>Basic</h3>
+      <pre>curl -u admin:*** -X PUT -H 'Content-Type: application/json' \
+  -d '{"items":[{"name":"List Root","method":"GET","url":"/api/fs/list?path=/","headers":{},"body":null}]}' \
+  "https://stateofshit.rest/api/presets"</pre>
+      <h3>Advanced</h3>
+      <pre># Multiple presets
+curl -u admin:*** -X PUT -H 'Content-Type: application/json' \
+  -d '{"items":[
+    {"name":"List Root","method":"GET","url":"/api/fs/list?path=/","headers":{},"body":null},
+    {"name":"Upload to staging","method":"POST","url":"/api/fs/upload","headers":{},"body":null}
+  ]}' \
+  "https://stateofshit.rest/api/presets"</pre>
+    </section>
+  </main>
+</body>
+</html>

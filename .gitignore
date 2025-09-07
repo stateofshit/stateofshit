@@ -1,0 +1,20 @@
+# OS/editor
+.DS_Store
+*.swp
+.idea/
+.vscode/
+.cache/
+.pytest_cache/
+
+# Python/node envs
+.venv/
+env/
+node_modules/
+dist/
+build/
+
+# Artifacts and local-only
+chats/
+*.log
+*.bak*
+

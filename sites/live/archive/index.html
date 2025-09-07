@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>STATE OF SHIT — Archive</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { color-scheme: light dark }
+    body { margin: 0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+    header { position: sticky; top:0; backdrop-filter: blur(6px); background: color-mix(in oklab, Canvas, transparent 20%); border-bottom: 1px solid #0001; }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 1rem }
+    .row { display:flex; gap: .75rem; align-items: center }
+    input[type="search"] { flex: 1; padding: .55rem .7rem; border-radius: 8px; border: 1px solid #0002; background: color-mix(in oklab, Canvas, CanvasText 3%); color: inherit }
+    main { max-width: 1100px; margin: 1rem auto 3rem; padding: 0 1rem; display: grid; grid-template-columns: 1fr 2fr; gap: 1rem }
+    .list { border: 1px solid #0002; border-radius: 12px; overflow: hidden }
+    .item { padding: .7rem .9rem; border-bottom: 1px solid #0001; cursor: pointer }
+    .item:hover { background: color-mix(in oklab, Canvas, CanvasText 4%) }
+    .item h3 { margin: 0 0 .2rem; font-size: 1rem }
+    .muted { color: #6b7280; font-size: .92rem }
+    .viewer { border: 1px solid #0002; border-radius: 12px; padding: 1rem; min-height: 50vh; overflow: auto }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap row">
+      <strong>STATE OF SHIT — Archive</strong>
+      <input id="q" type="search" placeholder="Search entries…" />
+      <a href="/" style="text-decoration:none">Back</a>
+    </div>
+  </header>
+  <main class="wrap">
+    <div class="list" id="list"></div>
+    <article class="viewer" id="viewer">Select an entry…</article>
+  </main>
+  <script src="/assets/marked.min.js"></script>
+  <script>
+    let data = []
+    let filtered = []
+    const list = document.getElementById('list')
+    const viewer = document.getElementById('viewer')
+
+    async function load() {
+      const res = await fetch('index.json', { cache: 'no-cache' })
+      data = await res.json()
+      filtered = data
+      renderList()
+    }
+    function renderList() {
+      list.innerHTML = ''
+      filtered.forEach((it, idx) => {
+        const div = document.createElement('div')
+        div.className = 'item'
+        div.innerHTML = `<h3>${it.timestamp}</h3><div class="muted">${it.file} • ${Math.round(it.size/1024)} KB</div><div class="muted">${it.preview.replaceAll('\n',' ')}</div>`
+        div.onclick = () => openItem(it)
+        list.appendChild(div)
+      })
+    }
+    async function openItem(it) {
+      const res = await fetch(it.file)
+      const md = await res.text()
+      viewer.innerHTML = marked.parse(md)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+    document.getElementById('q').addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase()
+      if (!q) { filtered = data; renderList(); return }
+      filtered = data.filter(it => (it.content || '').toLowerCase().includes(q) || (it.timestamp||'').toLowerCase().includes(q))
+      renderList()
+    })
+    load()
+  </script>
+</body>
+</html>
