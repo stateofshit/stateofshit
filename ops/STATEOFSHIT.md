@@ -1,4 +1,30 @@
 ============================================================
+Entry: 2025-09-07T10:21:10-0400
+============================================================
+
+Summary
+- Initialized monorepo at ~/stateofshit with ops docs and site sources.
+- Added deploy scripts for live/rest/space; webroots remain non-git.
+- Git remote set to git@github.com:stateofshit/stateofshit.git (push after adding SSH key).
+
+Artifacts / References
+- Repo: /home/shit/stateofshit
+- Scripts: /home/shit/stateofshit/scripts (deploy-*.sh)
+- SSH public key path: /home/shit/.ssh/id_ed25519.pub (add to GitHub before push)
+
+============================================================
+Entry: 2025-09-07T10:23:42-0400
+============================================================
+
+Summary
+- Pushed monorepo to GitHub; branch main tracks origin/main.
+- SSH key installed; future pushes pull/push via `git@github.com:stateofshit/stateofshit.git`.
+
+Artifacts / References
+- Remote: git@github.com:stateofshit/stateofshit.git
+- Repo: /home/shit/stateofshit
+
+============================================================
 Entry: 2025-09-07T02:41:30-04:00
 ============================================================
 
